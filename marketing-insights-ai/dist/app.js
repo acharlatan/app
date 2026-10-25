@@ -1,12 +1,13 @@
-import {initializePlatform} from './platform.js?v=polish-2';
+import {initializePlatform} from './platform.js?v=release-1';
+import {explorerRows} from './decision.js?v=release-1';
 import {config} from './config.js';
-import {metrics,evidence,filterRows} from './intelligence.js';
+import {metrics,evidence,filterRows} from './intelligence.js?v=release-1';
 import { fields, channels, demo, aggregate, ratio, parseCSV, csv } from './analytics.js';
 
 const $ = id => document.getElementById(id);
 let activeEvidence=null;document.addEventListener('mi:context',event=>{activeEvidence=event.detail});
-let generation=0;let page = 0; let data = demo, filtered = [], lastInsight = '', source = 'Fictional demo';
-const money = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+let page = 0;let tableRows=[]; let data = demo, filtered = [], lastInsight = '', source = 'Fictional demo';
+const money = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits:0, maximumFractionDigits: 2 }).format(value);
 const num = value => new Intl.NumberFormat('en-US').format(value);
 const mult = value => value === null ? '—' : value.toFixed(2) + '×';
 const pctChange = (first, last) => first ? `${((last - first) / first * 100) > 0 ? '+' : ''}${((last - first) / first * 100).toFixed(1)}%` : '—';
@@ -19,7 +20,7 @@ function download(name, text, type = 'text/plain') {
 }
 
 function render() {
-  generation++;document.querySelector('.badge').textContent=source==='Fictional demo'?'SYNTHETIC DEMO DATA':'UPLOADED DATA · LOCAL';
+  document.querySelector('.badge').textContent=source==='Fictional demo'?'SYNTHETIC DEMO DATA':'UPLOADED DATA · LOCAL';
   filtered = data.filter(row => ($('channel').value === 'All channels' || row.channel === $('channel').value) && (!$('date-from').value || row.date >= $('date-from').value) && (!$('date-to').value || row.date <= $('date-to').value) && (!$('campaign-filter')?.value||row.campaign===$('campaign-filter').value) && (!$('objective-filter')?.value||row.objective===$('objective-filter').value));
   filtered.sort((a,b)=>a.date.localeCompare(b.date)||a.channel.localeCompare(b.channel));
   lastInsight = '';
@@ -37,16 +38,18 @@ function render() {
     }
     $('kpis').append(card);
   });
+  tableRows=explorerRows(filtered,$('campaign-search')?.value||'',$('campaign-sort')?.value||'date');
   $('rows').replaceChildren();
-  page=Math.min(page,Math.max(0,Math.ceil(filtered.length/15)-1));
-  for (const row of filtered.slice(page*15,page*15+15)) {
+  page=Math.min(page,Math.max(0,Math.ceil(tableRows.length/15)-1));
+  if(!tableRows.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.textContent='No matching campaign records. Clear the search or adjust your filters.';tr.append(td);$('rows').append(tr)}
+  for (const row of tableRows.slice(page*15,page*15+15)) {
     const tr = document.createElement('tr');
     [row.date, row.campaign, row.channel, money(row.spend), money(row.revenue), num(row.clicks), num(row.conversions), mult(ratio(row.revenue, row.spend))].forEach((text, index) => {
       const td = document.createElement('td'); td.textContent = text; if (index === 7) td.className = 'roas'; tr.append(td);
     });
     $('rows').append(tr);
   }
-  $('row-count').textContent = `${filtered.length} campaign records · ${source} · USD`;
+  $('row-count').textContent = `${tableRows.length} matching records of ${filtered.length} selected · ${source} · USD`;
   $('mix').replaceChildren();
   for (const channel of channels) {
     const revenue = aggregate(filtered.filter(row => row.channel === channel)).revenue;
@@ -127,13 +130,6 @@ function insights() {
   const ranked = channels.map(channel => ({ channel, ...aggregate(filtered.filter(row => row.channel === channel)) })).filter(row => row.spend > 0).sort((a, b) => b.revenue / b.spend - a.revenue / a.spend);
   const best = ranked[0], low = ranked.at(-1);
   $('insight-output').replaceChildren();
-  if (lastInsight) {
-    const card = document.createElement('article'); card.className = 'strategy-card ai-response';
-    const top = document.createElement('div'); top.className = 'strategy-top';
-    const number = document.createElement('span'); number.className = 'strategy-num'; number.textContent = 'AI';
-    const tag = document.createElement('span'); tag.className = 'strategy-tag'; tag.textContent = 'Gemini · AI-generated'; top.append(number, tag);
-    const body = document.createElement('p'); body.textContent = `${lastInsight}\n\nReview recommendations before taking action.`; card.append(top, body); $('insight-output').append(card); return;
-  }
   const items = [
     { tag: 'FIND THE SIGNAL', title: best ? `Start with ${best.channel}` : 'Start with clean data', evidence: best ? `Observed ROAS is ${mult(best.revenue / best.spend)} (${money(best.revenue)} attributed revenue / ${money(best.spend)} spend).` : 'There is no spend data in the current selection.', test: 'Check margin, conversion quality, attribution windows, and audience overlap before scaling.' },
     { tag: 'TEST THE NEXT MOVE', title: low && low !== best ? `Investigate ${low.channel}` : 'Choose one variable to test', evidence: low && low !== best ? `It has the lowest observed ROAS in this selection at ${mult(low.revenue / low.spend)}.` : 'The current filters do not show a clear channel comparison.', test: 'Test one creative or audience change. Set a CPA target and compare against a holdout where possible.' },
@@ -163,24 +159,9 @@ function periods() {
 }
 
 $('channel').onchange = () => {page=0;render()};
-$('period').onchange = () => {const month=$('period').value;if(month==='all'){setFullRange()}else{$('date-from').value=month+'-01';const [y,m]=month.split('-').map(Number);$('date-to').value=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10)}page=0;render()};
+$('period').onchange = () => {const month=$('period').value;if($('date-preset'))$('date-preset').value=month==='all'?'all':'custom';if(month==='all'){setFullRange()}else{$('date-from').value=month+'-01';const [y,m]=month.split('-').map(Number);$('date-to').value=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10)}page=0;render()};
 $('sample').onclick = () => download('marketing-sample.csv', csv(demo), 'text/csv');
 $('reset').onclick = () => { $('campaign-filter').value='';$('objective-filter').value='';data = demo; source = 'Fictional demo'; periods(); setFullRange(); page=0;render(); $('upload-status').textContent = 'Demo data restored.'; };
-$('upload').onchange = async event => {
-  const file = event.target.files[0]; if (!file) return;
-  try {
-    if (file.size > 500000) throw Error('CSV must be under 500 KB.');
-    data = parseCSV(await file.text()); source = 'Uploaded data'; periods(); setFullRange(); page=0;render();
-    $('upload-status').textContent = `Imported ${data.length} records. Stored only in this tab.`;
-  } catch (error) { $('upload-status').textContent = error.message; }
-  event.target.value = '';
-};
-
-$('report').onclick = () => {
-  const summary = aggregate(filtered);
-  download('marketing-insights-report.txt', `MARKETING INSIGHTS AI\nBy Geovanni Hernandez\nGenerated: ${new Date().toISOString()}\nSource: ${source}\nChannel: ${$('channel').value}; dates: ${$('date-from').value} to ${$('date-to').value}\nRecords: ${filtered.length}\nRevenue: ${money(summary.revenue)}\nSpend: ${money(summary.spend)}\nROAS: ${mult(ratio(summary.revenue, summary.spend))}\nConversions: ${summary.conversions}\n\nPERFORMANCE BREAKDOWN\nMargin assumption: ${$('margin').value}%\nCPA target: ${$('cpa-target').value} USD\n${$('performance-breakdown').innerText}\n\nSTRATEGY\n${$('insight-output').innerText}\n\n${lastInsight ? 'AI-generated: verify all recommendations.' : 'Rules-based observations, not AI-generated.'}\nFictional demo data does not demonstrate real business results. Attributed revenue does not establish incrementality.\n\nPERIOD COMPARISON\n${$("comparison").innerText}\n\nSAVED EXPERIMENT\n${savedExperiment?experimentText(savedExperiment):"No experiment saved."}\n\nCAMPAIGN CSV\n${csv(filtered)}`);
-};
-
 try { $('endpoint').value = config.apiBase || localStorage.getItem('mi-worker') || ''; } catch {}
 $('save-endpoint').onclick = () => {
   try {
@@ -190,25 +171,6 @@ $('save-endpoint').onclick = () => {
     $('ai-status').textContent = 'Worker URL saved. Connection is not verified until an AI request succeeds.'; $('generate').textContent='Generate AI insights ↗';
   } catch { $('ai-status').textContent = 'Enter a valid HTTPS workers.dev URL (no key, query, or password).'; }
 };
-
-$('generate').onclick = async () => {
-  const button = $('generate'); let endpoint;
-  try { endpoint = new URL($('endpoint').value); if (endpoint.protocol !== 'https:' || !endpoint.hostname.endsWith('.workers.dev')) throw Error(); }
-  catch { $('ai-setup').open = true; $('ai-status').textContent = 'Add your HTTPS Cloudflare Worker URL below, then save the connection. Your local analysis is ready now.'; $('ai-setup').scrollIntoView({behavior:'smooth',block:'center'}); $('endpoint').focus(); return; }
-  if (!filtered.length) { $('insight-output').textContent = 'No selected data to analyze.'; return; }
-  if (!confirm('Send aggregated channel metrics to your Worker and Google Gemini? Do not send confidential data.')) return;
-  button.disabled = true; button.textContent = 'Analyzing…'; $('insight-output').textContent = 'Requesting Gemini insights…';
-  try {
-    const summary = [...new Set(filtered.map(r=>r.channel))].map(channel => ({ channel, ...aggregate(filtered.filter(row => row.channel === channel)) }));
-    const context=activeEvidence||evidence(filtered,{from:$('date-from').value,to:$('date-to').value,channel:$('channel').value,campaign:$('campaign-filter').value,objective:$('objective-filter').value});
-    const requestGeneration=generation;
-    const response = await fetch(endpoint.origin + '/insights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ summary,context }), signal: AbortSignal.timeout(25000) });
-    const result = await response.json(); if (!response.ok) throw Error(result.error || 'AI service unavailable.');
-    if(requestGeneration!==generation){$('ai-status').textContent='Filters changed. Previous AI response discarded.';return;}lastInsight = result.text; insights(); $('ai-status').textContent='Gemini response received. Review its interpretation against the data.';
-  } catch (error) { insights(); $('ai-status').textContent = 'AI request failed: ' + error.message + ' Local analysis remains available.'; }
-  finally { button.disabled = false; button.textContent = 'Generate AI insights ↗'; }
-};
-
 
 function breakdown(){
  const summary=aggregate(filtered),margin=Number($('margin').value),target=Number($('cpa-target').value),root=$('performance-breakdown');
@@ -226,34 +188,29 @@ function breakdown(){
 $('margin').oninput=()=>{breakdown();serviceRender()};$('cpa-target').oninput=()=>{breakdown();serviceRender()};
 $('explain').onclick=()=>{breakdown();$('explain').textContent='Breakdown updated ✓';setTimeout(()=>$('explain').textContent='Refresh breakdown ↻',1800)};
 function applyTheme(dark){document.documentElement.dataset.theme=dark?'dark':'light';$('theme-toggle').setAttribute('aria-pressed',String(dark));$('theme-toggle').textContent=dark?'☀ Light mode':'☾ Dark mode';}
-let dark=false;try{dark=localStorage.getItem('mi-theme')==='dark'}catch{}applyTheme(dark);
+let dark=matchMedia('(prefers-color-scheme: dark)').matches;try{const saved=localStorage.getItem('mi-theme');if(saved)dark=saved==='dark'}catch{}applyTheme(dark);
 $('theme-toggle').onclick=()=>{dark=!dark;applyTheme(dark);try{localStorage.setItem('mi-theme',dark?'dark':'light')}catch{}};
 document.querySelector('.upload').onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();$('upload').click()}};
-document.querySelectorAll('nav a').forEach(link=>link.addEventListener('click',()=>{document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));link.classList.add('active')}));
 if($('endpoint').value){$('generate').textContent='Generate AI insights ↗';$('ai-status').textContent='Saved Worker URL found. Generate insights to verify the connection.';}
 
 const dayMs=86400000;
 const dateISO=date=>new Date(date).toISOString().slice(0,10);
 function datasetBounds(){const dates=data.map(r=>r.date).sort();return [dates[0],dates.at(-1)]}
-function setFullRange(){const [from,to]=datasetBounds();$('date-from').value=from||'';$('date-to').value=to||'';$('period').value='all'}
+function setFullRange(){const [from,to]=datasetBounds();$('date-from').value=from||'';$('date-to').value=to||'';$('period').value='all';if($('date-preset'))$('date-preset').value='all'}
 function makeText(tag,text,className=''){const element=document.createElement(tag);element.textContent=text;element.className=className;return element}
-let completed={};let savedExperiment=null;
-try{completed=JSON.parse(localStorage.getItem('mi-actions')||'{}');savedExperiment=JSON.parse(localStorage.getItem('mi-experiment')||'null');if(!completed||typeof completed!=='object'||Array.isArray(completed))completed={};if(savedExperiment&&typeof savedExperiment!=='object')savedExperiment=null}catch{}
+let completed={};
+try{completed=JSON.parse(localStorage.getItem('mi-actions')||'{}');if(!completed||typeof completed!=='object'||Array.isArray(completed))completed={}}catch{}
 function serviceRender(){
  const start=$('date-from').value,end=$('date-to').value,s=aggregate(filtered),days=start&&end?Math.round((Date.parse(end)-Date.parse(start))/dayMs)+1:0;
  $('range-status').textContent=days<1?'Choose a start date on or before the end date.':`${start} → ${end} · ${days} calendar days · ${new Set(filtered.map(r=>r.date)).size} dates with observations · ${source}`;
- $('page-status').textContent=filtered.length?`Page ${page+1} of ${Math.ceil(filtered.length/15)} · ${filtered.length} records`:'No records';$('page-prev').disabled=page===0;$('page-next').disabled=(page+1)*15>=filtered.length;
- const comparison=$('comparison');comparison.replaceChildren();
- if($('compare-period').checked&&days>0){const previousEnd=dateISO(Date.parse(start)-dayMs),previousStart=dateISO(Date.parse(start)-days*dayMs),previous=filterRows(data,{from:previousStart,to:previousEnd,channel:$('channel').value,campaign:$('campaign-filter').value,objective:$('objective-filter').value});const ps=aggregate(previous);const observed=new Set(previous.map(r=>r.date)).size;
- comparison.append(makeText('p',`Previous period: ${previousStart} → ${previousEnd} · ${observed}/${days} days with observations. ${observed<days?'Coverage is incomplete; changes may reflect missing observations.':''}`,'hint'));
- if(previous.length&&filtered.length){[['Revenue',s.revenue,ps.revenue],['Spend',s.spend,ps.spend],['Conversions',s.conversions,ps.conversions],['ROAS',ratio(s.revenue,s.spend),ratio(ps.revenue,ps.spend)]].forEach(([label,current,prior])=>{const item=makeText('div','', 'comparison-item');item.append(makeText('strong',label),makeText('span',current===null||prior===null||prior===0?'Change unavailable':pctChange(prior,current)+' vs previous'));comparison.append(item)})}else comparison.append(makeText('p','No comparable observations. Select a later range or upload data that includes a previous period.','hint'));}
+ $('page-status').textContent=tableRows.length?`Page ${page+1} of ${Math.ceil(tableRows.length/15)} · ${tableRows.length} matching records`:'No records';$('page-prev').disabled=page===0;$('page-next').disabled=(page+1)*15>=tableRows.length;
  momentum();diagnostics();scenario();actions();
  const health=$('health-output');health.replaceChildren();const [min,max]=datasetBounds();health.append(makeText('p',`${data.length} validated records · Dataset coverage ${min} to ${max}. ${source==='Fictional demo'?'All observations are synthetic.':'Uploaded data is held in this tab and is not saved to a server.'}`),makeText('p',`${filtered.length} selected records; ${filtered.filter(r=>!r.spend).length} with zero spend; ${filtered.filter(r=>!r.conversions).length} with zero conversions. Zero denominators are shown as unavailable, not as a successful result.`),makeText('p','Attribution, customer quality, margin, and incremental lift cannot be validated from this CSV alone. Channel results are descriptive and do not establish causation.','hint'));
 }
 function momentum(){
  const metric=$('momentum-metric').value,group=$('momentum-group').value,buckets=new Map();
  filtered.forEach(r=>{let key=r.date;if(group==='month')key=r.date.slice(0,7);if(group==='week'){const d=new Date(r.date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));key=dateISO(d)}if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(r)});
- const points=[...buckets].sort((a,b)=>a[0].localeCompare(b[0])).map(([date,rows])=>{const s=aggregate(rows);return {date,value:metric==='roas'?ratio(s.revenue,s.spend):s[metric]}}),total=aggregate(filtered),format=value=>value===null?'Unavailable':metric==='roas'?mult(value):metric==='conversions'?num(value):money(value);
+ const points=[...buckets].sort((a,b)=>a[0].localeCompare(b[0])).map(([date,rows])=>{const s=aggregate(rows);return {date,coverage:new Set(rows.map(r=>r.date)).size,value:metric==='roas'?ratio(s.revenue,s.spend):s[metric]}}),total=aggregate(filtered),format=value=>value===null?'Unavailable':metric==='roas'?mult(value):metric==='conversions'?num(value):money(value);
  $('momentum-value').textContent=format(metric==='roas'?ratio(total.revenue,total.spend):total[metric]);
  const root=$('momentum-chart');if(!points.length){root.textContent='No observations in this date range.';$('momentum-detail').textContent='Adjust your filters to view momentum.';return;}
  const max=Math.max(1,...points.map(p=>p.value||0)),x=i=>25+(points.length===1?220:i*450/(points.length-1)),y=v=>155-(v||0)/max*125;
@@ -262,25 +219,20 @@ function momentum(){
  svg+=`<path class="momentum-line" pathLength="1" d="${path}" fill="none" stroke="#d4ed83" stroke-width="3" stroke-linejoin="round"/>`;
  valid.forEach(({p,i})=>svg+=`<circle cx="${x(i)}" cy="${y(p.value)}" r="5" fill="#d4ed83" tabindex="0" role="button" data-point="${i}" aria-label="${p.date}: ${format(p.value)}"><title>${p.date}: ${format(p.value)}</title></circle>`);
  svg+=`<text x="25" y="185" fill="#bcccaf" font-size="11">${points[0].date}</text><text x="475" y="185" text-anchor="end" fill="#bcccaf" font-size="11">${points.at(-1).date}</text></svg>`;root.innerHTML=svg;
- $('momentum-detail').textContent=`${$('momentum-metric').selectedOptions[0].text} · ${points.length} ${group} groups · ${$('date-from').value} to ${$('date-to').value}`;
- root.querySelectorAll('[data-point]').forEach(el=>{const show=()=>{const p=points[Number(el.dataset.point)];$('momentum-detail').textContent=`${p.date} · ${format(p.value)} · ${group==='week'?'Week beginning on this date':group==='month'?'Monthly total':'Daily observation'}`};el.onclick=show;el.onfocus=show;el.onmouseenter=show;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show()}}});
+ $('momentum-detail').textContent=`${$('momentum-metric').selectedOptions[0].text} · ${points.length} ${group} groups · ${$('date-from').value} to ${$('date-to').value}${group==='week'?' · Boundary weeks may be partial':''}`;
+ root.querySelectorAll('[data-point]').forEach(el=>{const show=()=>{const p=points[Number(el.dataset.point)];$('momentum-detail').textContent=`${p.date} · ${format(p.value)} · ${p.coverage} observed dates · ${group==='week'?'Week beginning on this date; boundary weeks may be partial':group==='month'?'Selected dates in this month':'Daily observation'}`};el.onclick=show;el.onfocus=show;el.onmouseenter=show;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show()}}});
 }
 function diagnostics(){const root=$('diagnostic-output');root.replaceChildren();const table=document.createElement('table');const head=document.createElement('thead'),tr=document.createElement('tr');['Channel','CTR','Conversion rate','CPA','ROAS','CPA target'].forEach(t=>tr.append(makeText('th',t)));head.append(tr);table.append(head);const body=document.createElement('tbody');channels.forEach(c=>{const s=aggregate(filtered.filter(r=>r.channel===c)),row=document.createElement('tr'),td=document.createElement('td'),button=makeText('button',c,'report-button');button.onclick=()=>{$('channel').value=c;page=0;render();$('dashboard').scrollIntoView({behavior:'smooth'})};td.append(button);row.append(td);const cpa=ratio(s.spend,s.conversions);[s.impressions?(s.clicks/s.impressions*100).toFixed(2)+'%':'—',s.clicks?(s.conversions/s.clicks*100).toFixed(2)+'%':'—',cpa===null?'—':money(cpa),mult(ratio(s.revenue,s.spend)),cpa===null?'Insufficient data':cpa<=Number($('cpa-target').value)?'Within target':'Above target'].forEach(t=>row.append(makeText('td',t)));body.append(row)});table.append(body);root.append(table)}
 function scenario(){const s=aggregate(filtered),shift=Number($('budget-shift').value)/100;$('budget-shift-value').textContent=(shift>=0?'+':'')+Math.round(shift*100)+'%';const root=$('scenario-output');root.replaceChildren();if(!s.spend){root.textContent='Choose records with spend to model a scenario.';return;}root.append(makeText('p',`Scenario spend: ${money(s.spend*(1+shift))}`),makeText('p',`Conversions at unchanged CPA: ${(s.conversions*(1+shift)).toFixed(1)} (observed ${num(s.conversions)})`),makeText('p',`Attributed revenue at unchanged ROAS: ${money(s.revenue*(1+shift))}`))}
 function actions(){const root=$('action-output');root.replaceChildren();if(!filtered.length){root.textContent='Choose a date range with observations to generate actions.';return;}const ranked=channels.map(channel=>({channel,...aggregate(filtered.filter(r=>r.channel===channel))})).filter(r=>r.spend).sort((a,b)=>a.revenue/a.spend-b.revenue/b.spend);const low=ranked[0];const tasks=[['measurement','Validate measurement','Confirm conversion events, attribution windows, and customer quality before changing budgets.'],['efficiency','Investigate acquisition cost',low?`${low.channel} has the lowest observed ROAS in this selection (${mult(low.revenue/low.spend)}). Review targeting and creative before reducing spend.`:'Record campaign spend to compare efficiency.'],['experiment','Plan one controlled test','Use the strategy lab to set a hypothesis, budget, duration, and CPA guardrail.'],['review','Schedule a decision','Review the test at the planned end date. Compare with a holdout and record uncertainty before scaling.']];tasks.forEach(([id,title,detail],i)=>{const label=document.createElement('label');label.className='action-item';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=!!completed[id];checkbox.onchange=()=>{completed[id]=checkbox.checked;try{localStorage.setItem('mi-actions',JSON.stringify(completed))}catch{}};const text=document.createElement('span');text.append(makeText('strong',`${i+1}. ${title}`),makeText('p',detail));label.append(checkbox,text);root.append(label)})}
-function experimentText(plan){return `CAMPAIGN EXPERIMENT PLAN\nChannel: ${plan.channel}\nDates analyzed: ${plan.from} to ${plan.to}\nHypothesis: ${plan.hypothesis}\nBudget: ${plan.budget} USD\nDuration: ${plan.days} days\nSuccess guardrail: CPA at or below ${plan.target} USD; verify conversion quality\nDesign: change one variable, keep other conditions comparable, and use a holdout where feasible.\nDecision: review the complete test window and sample size before scaling.\nSaved: ${plan.saved}\nIllustrative plan; no advertising spend has been committed.`}
-function previewExperiment(){const root=$('experiment-preview');root.replaceChildren();if(savedExperiment){root.append(makeText('pre',experimentText(savedExperiment)));$('download-experiment').disabled=false}else{$('download-experiment').disabled=true}}
-$('experiment-form').onsubmit=e=>{e.preventDefault();savedExperiment={channel:$('experiment-channel').value,hypothesis:$('experiment-hypothesis').value.trim(),budget:$('experiment-budget').value,days:$('experiment-days').value,target:$('cpa-target').value,from:$('date-from').value,to:$('date-to').value,saved:new Date().toISOString()};if(!savedExperiment.hypothesis)return;try{localStorage.setItem('mi-experiment',JSON.stringify(savedExperiment));$('experiment-status').textContent='Experiment saved in this browser.'}catch{$('experiment-status').textContent='Plan is ready for this tab. Browser storage is unavailable; download a copy.'}previewExperiment()};
-$('download-experiment').onclick=()=>{if(savedExperiment)download('campaign-experiment.txt',experimentText(savedExperiment))};
-$('budget-shift').oninput=scenario;$('momentum-metric').onchange=momentum;$('momentum-group').onchange=momentum;
+$('budget-shift').oninput=scenario;['campaign-search','campaign-sort'].forEach(id=>$(id).addEventListener(id==='campaign-search'?'input':'change',()=>{page=0;render()}));$('momentum-metric').onchange=momentum;$('momentum-group').onchange=momentum;
 ['date-from','date-to'].forEach(id=>$(id).onchange=()=>{$('period').value='all';page=0;render()});$('compare-period').onchange=serviceRender;
 function recentRange(days){const [,end]=datasetBounds();$('date-to').value=end;$('date-from').value=dateISO(Date.parse(end)-(days-1)*dayMs);$('period').value='all';page=0;render()}
 $('range7').onclick=()=>recentRange(7);$('range30').onclick=()=>recentRange(30);$('rangeall').onclick=()=>{setFullRange();page=0;render()};
-$('page-prev').onclick=()=>{if(page>0){page--;render()}};$('page-next').onclick=()=>{if((page+1)*15<filtered.length){page++;render()}};$('filtered-csv').onclick=()=>download('filtered-campaigns.csv',csv(filtered),'text/csv');
+$('page-prev').onclick=()=>{if(page>0){page--;render()}};$('page-next').onclick=()=>{if((page+1)*15<tableRows.length){page++;render()}};$('filtered-csv').onclick=()=>download('filtered-campaigns.csv',csv(tableRows),'text/csv');
 let collapsed=false;try{collapsed=localStorage.getItem('mi-nav-collapsed')==='true'}catch{}
 function navState(){document.body.classList.toggle('nav-collapsed',collapsed);$('nav-toggle').textContent=collapsed?'☰':'◧ Collapse sidebar';$('nav-toggle').setAttribute('aria-label',collapsed?'Expand navigation':'Collapse navigation');$('nav-toggle').title=collapsed?'Expand navigation':'Collapse navigation';$('nav-toggle').setAttribute('aria-expanded',String(!collapsed));$('main-nav').inert=collapsed}
 $('nav-toggle').onclick=()=>{collapsed=!collapsed;navState();try{localStorage.setItem('mi-nav-collapsed',String(collapsed))}catch{}};navState();
-function updateNavigation(){const ids=['dashboard','diagnostics','insights','action-plan','campaigns','data-health','about'];let active='overview';for(const id of ids){if($(id).getBoundingClientRect().top<=170)active=id}document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+active))}window.addEventListener('scroll',updateNavigation,{passive:true});updateNavigation();
-periods();setFullRange();previewExperiment();render();
+periods();setFullRange();render();
 
 initializePlatform({get:()=>({data,rows:filtered,source,filters:{from:$('date-from').value,to:$('date-to').value,channel:$('channel').value,campaign:$('campaign-filter')?.value||'',objective:$('objective-filter')?.value||''}}),refresh:()=>{page=0;render()},importRows:(rows,label)=>{$('campaign-filter').value='';$('objective-filter').value='';data=rows;source=label;periods();setFullRange();page=0;render()},download});

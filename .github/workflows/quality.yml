@@ -1,0 +1,25 @@
+name: Release quality checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ['release/**']
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: marketing-insights-ai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Analytics, imports, persistence and Worker safeguards
+        run: npm test
+      - name: Bundle Worker without deploying or reading secrets
+        run: npx --yes wrangler@4.152.0 deploy --dry-run --config worker/wrangler.jsonc --outdir "$RUNNER_TEMP/marketing-worker"
+        env:
+          WRANGLER_SEND_METRICS: 'false'
