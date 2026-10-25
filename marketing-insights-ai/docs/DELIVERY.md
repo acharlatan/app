@@ -28,13 +28,15 @@ The original continuous Import → Validate → Measure → Compare → Interpre
 | Drag-and-drop upload gesture | Not Verified | Handler retained; acceptance upload used the real file chooser |
 | Browser Save as PDF pagination | Not Verified | Print stylesheet and print action provided; native PDF save/pagination was not certified in this browser environment |
 | Assistive technology certification | Not Verified | Keyboard/ARIA/focus controls implemented; no screen-reader certification performed |
-| Real Gemini response through production Worker | Not Verified | Must be recorded separately after the release deployment; /status configuration is insufficient |
+| Real Gemini response through production Worker | Passed | Oct 25, 2026: explicit consent in the live Pages app; actual Gemini text received through /chat, mode labeled Connected and verified. Email 10.98× ROAS, $4.58 CPA and 537 conversions matched calculated evidence. Test used synthetic data only. |
 
 The first attempt to re-upload a browser-downloaded temporary file failed in the browser file handoff. Uploading the explicit shared synthetic fixture succeeded; this was not recorded as an application import pass until the complete preview/confirm flow succeeded. Browser extension metadata errors were observed; no application-origin JavaScript error was observed in the checked console output.
 
 ## Deployment record
 
-Development branch: release/v1-polish. The starting main commit remains its recoverable parent. Pull request and deployment statuses are verified separately at release publication. The architecture remains GitHub Pages frontend / Cloudflare Worker backend. No billing, paid resources, new API key, authentication system or cloud database was introduced.
+Release branch: `release/v1-polish`; [PR #1](https://github.com/acharlatan/app/pull/1) merged at `3cc20165f7ba62cb2fedd397329b016106811803`. The starting main commit `8707a22c967a291ba67e4f1a1bef95cbc7ac9585` remains recoverable. Both release quality runs passed. [GitHub Pages run 40165940399](https://github.com/acharlatan/app/actions/runs/40165940399) succeeded and the live browser showed the release modes, overview and versioned assets. Cloudflare production build `947935a8-711f-4d14-8d50-47f15a24558b` succeeded for that exact merge commit, as reported by its GitHub check; a real production Gemini response then succeeded. The nonproduction branch build failed; detailed branch logs require Cloudflare login. That failure did not recur in the production build. A small follow-up fixes one inherited dark-theme caption color and records these results. The architecture remains GitHub Pages frontend / Cloudflare Worker backend. No billing, paid resources, new API key, authentication system or cloud database was introduced.
+
+Live verification screenshot: [light dashboard](RELEASE-1.0-LIGHT.jpg) and [dark dashboard](RELEASE-1.0.jpg). Automated credential-pattern scan found no key/private-key patterns in deployed source/configuration. Secret revocation history and paid/free account settings were not independently verified.
 
 ## Release boundaries
 

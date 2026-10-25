@@ -19,3 +19,6 @@ html[data-theme=dark]{color-scheme:dark;--bg:#141416;--paper:#1e1e21;--paper-gre
 /* Long saved-plan content and navigation remain within mobile containers. */
 .premium .sidebar nav{overflow-x:hidden;max-height:none}.premium .action-item{display:flex;align-items:flex-start;gap:14px;min-width:0}.premium .action-item>span{min-width:0;flex:1;overflow-wrap:anywhere}.premium .action-item input{flex:0 0 16px;margin-top:6px}.premium #scenario-list,.premium #experiment-list{min-width:0;max-width:100%}.premium #scenario-list>.strategy-card{max-width:100%;overflow-x:auto}.premium .project-detail p{overflow-wrap:anywhere}
 @keyframes card-arrive{from{opacity:.85;transform:translateY(4px)}to{opacity:1;transform:none}}.premium .kpi{animation:card-arrive .3s ease both}.premium #scenario-name{min-width:230px;margin:18px 0 24px}.premium #scenario-name:invalid{border-color:#b05c7b}@media(prefers-reduced-motion:reduce){.premium .kpi{animation:none}}
+
+/* Keep legacy theme selectors from reducing secondary text contrast. */
+html[data-theme=dark] .premium .kpi .sub{color:var(--muted)}html[data-theme=dark] .premium .intro-lead{color:var(--ink)}
