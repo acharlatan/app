@@ -1,0 +1,11 @@
+{
+  "name": "marketing-insights-ai",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "worker:deploy": "npx wrangler deploy --config worker/wrangler.jsonc",
+    "worker:secret": "npx wrangler secret put GEMINI_API_KEY --config worker/wrangler.jsonc"
+  }
+}
