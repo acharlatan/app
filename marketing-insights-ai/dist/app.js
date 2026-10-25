@@ -1,4 +1,4 @@
-import {initializePlatform} from './platform.js?v=ambient-1';
+import {initializePlatform} from './platform.js?v=polish-2';
 import {config} from './config.js';
 import {metrics,evidence,filterRows} from './intelligence.js';
 import { fields, channels, demo, aggregate, ratio, parseCSV, csv } from './analytics.js';

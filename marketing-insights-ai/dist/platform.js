@@ -1,4 +1,4 @@
-import {initializeExperience} from './experience.js';
+import {initializeExperience} from './experience.js?v=polish-2';
 import {formatResponse} from './response.js';
 import {checkConnection} from './connection.js';
 import {fields,parseCSV,csv,aggregate} from './analytics.js';
