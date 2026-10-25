@@ -1,7 +1,7 @@
 export function initializeExperience(){
  const $=id=>document.getElementById(id),main=$('overview'),nav=$('main-nav');
  document.body.classList.add('immersive');
- const scope=document.createElement('details');scope.className='scope-drawer';const summary=document.createElement('summary');summary.textContent=`${$('date-from').value} → ${$('date-to').value} · Selection & comparison`;scope.append(summary);
+ const scope=document.createElement('details');scope.className='scope-drawer';const summary=document.createElement('summary');summary.textContent=`${$('date-from').value} → ${$('date-to').value} · Filters & comparison`;scope.append(summary);
  const all=[...main.children];let collecting=false;
  for(const node of all){if(node.id==='dashboard')collecting=true;if(node.id==='data-note')collecting=false;if(collecting)scope.append(node)}
  main.querySelector('header').after(scope);scope.querySelector('#dashboard').id='dashboard-controls';scope.id='dashboard';
@@ -35,5 +35,5 @@ export function initializeExperience(){
  for(const a of links){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');svg.classList.add('nav-icon');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',paths[a.hash.slice(1)]||paths.dashboard);svg.append(path);a.prepend(svg)}
  function rangeState(){const value=$('date-preset').value;for(const [id,key]of [['range7','7'],['range30','30'],['rangeall','all']])$(id).setAttribute('aria-pressed',String(value===key));const custom=$('comparison-mode').value==='custom';for(const id of ['comparison-from','comparison-to'])$(id).parentElement.hidden=!custom}
  $('comparison-mode').addEventListener('change',rangeState);$('date-preset').addEventListener('change',rangeState);['range7','range30','rangeall','date-from','date-to'].forEach(id=>$(id).addEventListener(id.startsWith('date-')?'change':'click',()=>requestAnimationFrame(rangeState)));document.addEventListener('mi:context',()=>requestAnimationFrame(rangeState));rangeState();
- document.addEventListener('mi:context',e=>{const c=e.detail;summary.textContent=`${c.filters.from} → ${c.filters.to} · ${c.filters.channel||'All channels'} · Selection & comparison`});
+ document.addEventListener('mi:context',e=>{const c=e.detail;summary.textContent=`${c.filters.from} → ${c.filters.to} · ${c.filters.channel||'All channels'} · Filters & comparison`});
 }

@@ -1,8 +1,11 @@
-# Changelog
+# 1.0.0 release
 
-## 2.0.0 — 25 October 2026
-
-Audited existing static source before changes; 7 baseline tests passed. Preserved working architecture and added `intelligence.js`, `platform.js`, and public `config.js`. Added six-month demo history, scoped assistant, expanded planning/reporting/import workspaces, and security validation. Replaced destructive old build generator with a non-mutating compatibility check. Added 14 tests, bringing total to 21. Documented live API, public deployment, mobile and PDF verification limits. No paid service enabled and no new frontend dependency introduced.
-
-## Connection readiness update — 25 October 2026
-Added no-token-cost Worker configuration status, frontend connection checks, public endpoint validation, private secret-entry commands, and five mocked connection tests. No shared key was stored or used; activation requires a fresh private secret and the owner's Cloudflare deployment.
+- Replaced accumulated design overrides with one release stylesheet: warm off-white, charcoal, pink and lime; original analytics-focused composition inspired by the supplied reference.
+- Unified continuous section journey, refined icons, sidebar/mobile behavior, system-aware persisted themes and reduced motion.
+- Added actual-data overview insight, comparison and goal cards; no decorative fake data.
+- Replaced AI checkbox UX with keyboard-operable Gemini/Local Analysis modes; retained consent and bounded context.
+- Unified Strategy Lab AI generation with Ask Your Data and added editable experiment drafts from responses.
+- Fixed CPA comparison reasoning, custom-date validation, dataset invalidation and duplicate render owners.
+- Added campaign search, metric sorting, consistent pagination/export, empty states and transparent health assessments.
+- Added dataset-checked scenario restore/edit/export, experiment baseline preservation and legacy-plan migration.
+- Expanded scoped reports and owner operations, regression tests and release CI Worker dry-run checks.

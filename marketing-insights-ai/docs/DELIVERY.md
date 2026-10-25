@@ -1,48 +1,41 @@
-# Delivery status and QA
+# Marketing Insights AI 1.0 — release verification
 
-## Completed in this release
+## Implemented
 
-Incremental static architecture preserved; no new npm dependencies. Existing dashboard/chart/CSV/theme features remain. Added a pure tested intelligence module; six-month synthetic history; campaign/objective filtering; dataset-relative presets; absolute/relative comparisons; scoped local assistant with optional Gemini interpretation; structured strategy guidance; multi-experiment management and ICE scoring; configurable goal scoring; threshold change alerts; per-channel budget allocations and scenario persistence; funnel; branded report preview; browser print/PDF flow; mapped CSV preview/validation/confirmation; saved views and onboarding; eleven ordered navigation sections; expanded portfolio/privacy explanations.
+The release uses the provided wellness interface's visual principles: warm white surfaces, confident typography, soft rounded cards, a charcoal momentum/Strategy Lab composition, luminous pink for featured analysis, and lime for deliberate strategy emphasis. It uses original analytics content and real selected metrics, not the reference's identity, photographs or layout. Light/dark palettes, a mobile sidebar, keyboard analysis modes and reduced motion are explicitly designed.
 
-## Bugs and weaknesses addressed
+The original continuous Import → Validate → Measure → Compare → Interpret → Decide → Experiment → Report journey remains. Details are expandable rather than removed. Search/sort/export share the same explorer selection; dashboard context remains authoritative. Experiments preserve their original baseline and scope during edits. Scenarios restore, edit and export with a dataset fingerprint check. Reports include actual comparisons, goals, saved plan scopes and limitations. Duplicate frontend comparison, navigation, legacy single-plan and direct-AI handlers were removed.
 
-- Worker context now includes selected dates, counts and campaign/filter scope; empty channels are omitted.
-- AI responses are discarded when the scope changes; chat requests abort on scope changes.
-- Legacy build script no longer overwrites modern application files.
-- Full versus uploaded data labels are distinct.
-- Reports include scope and comparison; efficiency rates use aggregate totals.
-- Experiment baseline uses the selected experiment channel rather than an all-channel baseline.
-- CSV exports escape formula prefixes including leading whitespace; import mappings reject duplicates and exact duplicate records.
-- Invalid saved JSON falls back safely; saved views cannot silently broaden a missing campaign to all data.
-- Private keys remain exclusively server-side; bounded question/history/context validation added.
+## Acceptance results
 
-## Automated verification
+| Area | Actual result | Evidence / limit |
+|---|---|---|
+| Automated regression suite | Passed | 37 Node tests: analytics, dates, CSV, local answers, scenario restore, baseline preservation, response safety, Worker validation, quotas and failures |
+| Worker bundle | Passed | Wrangler dry-run compiled shared dependency and listed native rate-limit / Durable Object bindings; no secret read and no deployment |
+| Sample CSV download | Passed | Browser download event completed |
+| CSV preview / mapping / validation / confirmation | Passed | 549-row synthetic fixture through the real file chooser; confirmed tab-only import |
+| Invalid uploads | Passed | Missing spend rejected; exact duplicate records rejected; confirm disabled |
+| Dates and comparison | Passed | Last 30 data days selected Sep 1–30; Aug 2–31 comparison; revenue 32,800 vs 29,195 |
+| Momentum and campaign explorer | Passed | Metric/group controls, search Email (30 of 90 selected records), sort by revenue, selected-value output |
+| Local analytical answer | Passed | “Why did CPA increase?” returned current 12.91 vs previous 13.28, a -2.84% observed change, without inventing causality |
+| Experiment draft / save / edit / refresh | Passed | Draft reviewed and saved; edit after changing filters kept original 4.05 CPA baseline; persisted after refresh |
+| Scenario create / restore / edit / export | Passed | Saved 90% efficiency, restored Email budget 600 after changing it to 200; preserved scope and values; updated Email to 620 and renamed the saved scenario |
+| Report preview / text export | Passed | Current selection, comparisons, assumptions and saved plans appeared in preview; download event completed |
+| Browser-local persistence | Passed | Saved plans/scenarios survived refresh; imported raw CSV intentionally reset to demo |
+| Responsive layout | Passed | Real same-origin frame viewports at 390, 768 and 1440 pixels; body scroll width matched viewport; mobile collapse/expand, local answer and theme checked |
+| Saved views / Back / Forward | Passed | Saved Sep 1–30 context restored after selecting seven days; browser Back/Forward restored section fragments |
+| Desktop themes / navigation | Passed | Rendered light/dark inspection; section anchors and sidebar state checked |
+| Drag-and-drop upload gesture | Not Verified | Handler retained; acceptance upload used the real file chooser |
+| Browser Save as PDF pagination | Not Verified | Print stylesheet and print action provided; native PDF save/pagination was not certified in this browser environment |
+| Assistive technology certification | Not Verified | Keyboard/ARIA/focus controls implemented; no screen-reader certification performed |
+| Real Gemini response through production Worker | Not Verified | Must be recorded separately after the release deployment; /status configuration is insufficient |
 
-26 tests pass using Node's built-in test runner. Coverage includes original July–September benchmark, six-month CSV round trip, optional metadata, weighted KPIs, zero denominators, date filtering, reversed ranges, leap/calendar comparison boundaries, funnel ratios, goal scoring, sparse-data fallback, descriptive signals, budget validation, ICE scoring, assistant evidence, CSV aliases and US dates, malformed local JSON, bounded conversation/context, mocked Gemini success and upstream failure, payload-size rejection, CORS, fail-closed configuration, per-IP throttling and 30-attempt durable quota. No real Gemini tokens were consumed by tests.
+The first attempt to re-upload a browser-downloaded temporary file failed in the browser file handoff. Uploading the explicit shared synthetic fixture succeeded; this was not recorded as an application import pass until the complete preview/confirm flow succeeded. Browser extension metadata errors were observed; no application-origin JavaScript error was observed in the checked console output.
 
-## Browser verification
+## Deployment record
 
-Verified on the available desktop browser: campaign/date synchronization; deterministic assistant answer with selected evidence; light/dark themes; collapse/expand navigation; no broken fragment targets; report preview for synthetic and uploaded data; three-row CSV mapping, validation, confirmed import; downloaded CSV parsed back to exactly three records; experiment save and scenario save. Browser extension metadata errors were observed, not application exceptions.
+Development branch: release/v1-polish. The starting main commit remains its recoverable parent. Pull request and deployment statuses are verified separately at release publication. The architecture remains GitHub Pages frontend / Cloudflare Worker backend. No billing, paid resources, new API key, authentication system or cloud database was introduced.
 
-The browser file chooser/confirmation flow required recovery from an automation timeout; after accepting the test confirmation, the imported dataset and export were verified. This does not prove every browser/platform file-picker behaves identically.
+## Release boundaries
 
-## Partial or account-dependent
-
-- Gemini integration is implemented and mocked, **not activated or live-tested**: no deployed owner Worker/key/default endpoint exists in this workspace. Visitors can use local intelligence now. Owner must verify model/free-tier access, deploy the Worker, set its secret, and set `config.js` once.
-- GitHub Pages workflow/files are ready; publishing into the owner's GitHub account is not performed here. The private Sites review copy is separate.
-- Reports support browser Print / Save as PDF, not an automatic binary PDF download. Print preview/page breaks need acceptance testing in the target browser.
-- Responsive CSS is implemented; a genuine narrow-device browser session was unavailable. Do not claim full mobile/a11y certification. No formal assistive-technology audit.
-- Local assistant supports a bounded set of intents and generic fallbacks. It is not a local language model. Gemini receives only bounded recent context. AI-generated numerical prose is not guaranteed correct; calculated evidence is the reference.
-- Change alerts are deterministic threshold comparisons, not statistically validated anomaly detection. Scoring is a configurable goal rubric, not an objective benchmark.
-- One active dataset; three supported channels; extra funnel stages require a future schema/mapping extension. Core funnel is impressions/clicks/conversions. No unique reach when absent.
-- Scenario comparison is descriptive saved cards; there are no confidence intervals, causal forecasts, or ad-spend execution.
-- Local storage is browser-specific and not encrypted/synchronized. There are no accounts, integrations with live ad platforms, authentication on the public Worker, or multi-user roles.
-- Some legacy dashboard UI remains alongside the new module to preserve backward compatibility. A later refactor can consolidate rendering after broader browser regression coverage.
-
-## Recommended next work
-
-1. Complete the actual Worker/key/config setup without enabling paid billing, then perform one live Gemini test.
-2. Perform phone-width, keyboard-only, screen-reader and print/PDF acceptance testing.
-3. Add authenticated API access before commercial use; public origin checks alone do not stop custom clients.
-4. Extend schemas for additional channels, funnel stages, currencies and attribution models based on concrete data requirements.
-5. Add a public GitHub repository link after publication and record real usability feedback.
+1.0 is a publicly hosted marketing intelligence demo with useful nonconfidential-data workflows. It does not establish production authentication, private multi-user storage, audited attribution, causal inference or a monetary spending cap. Provider account access and key-revocation history cannot be inferred from the frontend. See DEPLOYMENT.md for updates, monitoring, emergency shutdown, secret rotation and troubleshooting.
